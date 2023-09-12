@@ -1,9 +1,7 @@
 
 class Max_List:
     def __init__(self, n:int) -> None:
-        self.items = [None] * n
-        for i in range(n):
-            self.items[i] = 0
+        self.items = [0] * n
 
     def calculate_helper(self, n:int, val) -> None:
         length = len(self.items)

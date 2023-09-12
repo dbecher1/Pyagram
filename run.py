@@ -6,6 +6,8 @@ from max_list import *
 
 def Run() -> None:
 
+    ## LOAD CONFIG ##
+
     config = ConfigParser()
     config.read('config.ini')
 
@@ -16,11 +18,17 @@ def Run() -> None:
     save_svg = config.getboolean('SETTINGS', 'SVG')
     draw_lines = config.getboolean('SETTINGS', 'lines')
     filename = config['SETTINGS']['Filename']
-    header_text_size = config.getint('SETTINGS', 'HeaderTextSize')
+    header_text_size = config.getfloat('SETTINGS', 'HeaderTextSize')
     item_text_size = config.getint('SETTINGS', 'ItemTextSize')
     vbox_padding = config.getint('SETTINGS', 'VBoxPadding')
     hbox_padding = config.getint('SETTINGS', 'HBoxPadding')
     max_boxes = config.getint('SETTINGS', 'MaxBoxWidth')
+    box_spacing_modifier = config.getfloat('SETTINGS', 'BoxSpacingModifier')
+    final_scaling = config.getfloat('SETTINGS', 'Scale')
+
+    ## END CONFIG ##
+
+    ## PARSE JSON ##
 
     with open(filename + '.json') as f:
         data = json.load(f)
@@ -53,8 +61,9 @@ def Run() -> None:
                 
         nodes.append(new_node)
 
-    width = hbox_padding + item_text_size
-    height = vbox_padding + item_text_size
+    ## END JSON ##
+    width = 0
+    height = 0
 
     largest = Max_List(max_boxes)
 
@@ -65,11 +74,11 @@ def Run() -> None:
 
     width += largest.sum()
 
-    w_padding = (width / len(nodes)) * 0.5 # these are for the boxes on the canvas
-    h_padding = (height / len(nodes)) # the other similar variable is for interior text
+    w_padding = (width / len(nodes)) * 0.3 # these are for the boxes on the canvas
+    h_padding = (height / len(nodes)) * 0.9 # the other similar variable is for interior text
 
-    canvas_width = (width) + w_padding
-    canvas_height = (height) + h_padding
+    canvas_width = width
+    canvas_height = height
 
     d = draw.Drawing(canvas_width, canvas_height)
     if not alpha_bg:
@@ -78,51 +87,70 @@ def Run() -> None:
     x_ = w_padding
     y_ = h_padding
 
-    ## THIS IS THE DRAWING ##
+    ## DRAWING ##
 
     for n in nodes:
-        r = draw.Rectangle(x=x_,y=y_, width=n.box_width, height=n.box_height, fill='none', stroke='black')
+        r = draw.Rectangle(
+            x=x_,
+            y=y_,
+            width=n.box_width,
+            height=n.box_height,
+            fill='none',
+            stroke='black'
+            )
+
+        title = draw.Text(
+            n.name,
+            font_size=header_text_size,
+            x=x_ + n.box_width,
+            y=y_ - 2,
+            font_weight='bold',
+            text_anchor='end'
+            )
 
         d.append(r)
-        d.append(draw.Text(n.name, font_size=header_text_size, x=x_ + n.box_width, y=y_ - 2, font_weight='bold', text_anchor='end'))
+        d.append(title)
 
         # Draw inner boxes
         x2 = x_
         for c in n.children:
             underline = ''
-            if n.children[c]: # if is key
+            if n.children[c]: # if this element is key
                 underline = 'underline'
-            width = n.item_boxes[c]
+            box_width = n.item_boxes[c]
 
             t = draw.Text(
                 text=c,
                 font_size=item_text_size,
                 dominant_baseline='middle',
+                text_anchor='middle',
                 text_decoration=underline,
-                x=x2 + hbox_padding,
+                x=x2 + (box_width * 0.5),
                 y=y_ + (0.5 * n.box_height)
                     )
+            
             l = draw.Line(
-                sx=x2+width,
-                ex=x2+width,
+                sx=x2+box_width+hbox_padding,
+                ex=x2+box_width+hbox_padding,
                 sy=y_,
-                ey=n.box_height,
-                stroke='black'
+                ey=y_ + n.box_height,
+                stroke='black',
+                stroke_width=1
             )
             d.append(t)
             d.append(l)
-            x2 += width + hbox_padding * 2
+            x2 += box_width + hbox_padding
 
         # Move coordinates
         x_ += w_padding + n.box_width
         if x_ + n.box_width >= canvas_width:
             x_ = w_padding
-            y_ += h_padding * 3
+            y_ += h_padding * box_spacing_modifier
 
 
     ## END DRAWING ##
 
-    d.set_pixel_scale(2)
+    d.set_pixel_scale(final_scaling)
     if save_png: d.save_png('out/' + filename + '.png')
     if save_svg: d.save_svg('out/' + filename + '.svg')
 

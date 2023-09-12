@@ -23,13 +23,13 @@ class Node:
         return out
     
     def calculate_dimensions(self, text_size:int = 8, h_padding:int = 0, v_padding:int = 0) -> None:
+        self.box_width = 0
         for c in self.children:
             length = len(c)
-            self.item_boxes[c] = (length * text_size * 0.5) + h_padding
+            w = (length * 0.8) * (text_size * 1.1)
+            self.item_boxes[c] = w
+            self.box_width += w + h_padding
         self.box_height = text_size + v_padding
-        self.box_width = h_padding
-        for i in self.item_boxes.values():
-            self.box_width += i
 
 if __name__ == '__main__':
     pass
