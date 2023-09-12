@@ -12,6 +12,7 @@ class Node:
         self.children[child] = key
 
     def __repr__(self) -> str:
+        # quick and dirty just for debug
         out = ""
         for c in self.children:
             out += c + "\n"
