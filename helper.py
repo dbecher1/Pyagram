@@ -19,15 +19,23 @@ class Box:
         return self.is_intersecting(p.x, p.y)
     
 class Line:
-    def __init__(self, start_x, end_x, start_y, end_y) -> None:
-        self.sx = start_x
-        self.sy = start_y
-        self.ex = end_x
-        self.ey = end_y
+    def __init__(self, sx, sy, ex, ey) -> None:
+        self.sx = sx
+        self.sy = sy
+        self.ex = ex
+        self.ey = ey
         self.points_of_delta = {}
+
+    def __repr__(self) -> str:
+        s = 'Line:\n'
+        s += 'start: '
+        s += str(self.sx) + ' ' + str(self.sy) + '\n'
+        s += 'end: '
+        s += str(self.ex) + ' ' + str(self.ey) + '\n'
+        return s
     
 
-class Helper:
+class Helper(object):
     # idk what to call this
 
     def __init__(self, width, height) -> None:
@@ -55,12 +63,18 @@ class Helper:
         self.collision_boxes[b3] = []
         self.collision_boxes[b4] = []
 
+    def __enter__ (self):
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        pass
+
     def add_child(self, parent, child, x_, y_, w_, h_) -> None:
 
         if parent not in self.node_child_relations:
             self.node_child_relations[parent] = {}
 
-        b = Box(x_, y_, w_, h_)
+        b = Box(x_, y_, x_ + w_, y_ + h_)
 
         self.node_child_relations[parent][child] = {}
         self.node_child_relations[parent][child]['box'] = b
@@ -78,11 +92,23 @@ class Helper:
                     rel = data[parent][child]
 
                     for r in rel:
-                        # r is the name of the other parent
-                        # rel[r] is the name of the other child
+                        # rel is the name of the other parent
+                        # r the name of the other child
+                        # rel[r] is the data
                         if r in self.node_child_relations and rel[r] in self.node_child_relations[r]:
                             other_child_data = self.node_child_relations[r][rel[r]]
                             self.node_child_relations[parent][child]['relations'].append(other_child_data['box'])
 
                         else:
                             print('something went wrong...')
+
+    def construct_lines_test(self) -> None:
+
+        for p in self.node_child_relations:
+            for c in self.node_child_relations[p]:
+
+                b = self.node_child_relations[p][c]['box']
+
+                for r in self.node_child_relations[p][c]['relations']:
+                    line = Line(sx=b.x, sy=b.y, ex=r.x, ey=r.y)
+                    self.lines.append(line)

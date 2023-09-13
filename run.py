@@ -35,6 +35,7 @@ def Run() -> None:
         data = json.load(f)
 
     nodes = []
+    relations_temp = {}
 
     for node in data:
 
@@ -43,8 +44,6 @@ def Run() -> None:
         children = data[node].get('Children')
         keys = data[node].get('Keys')
         relations = data[node].get('Relations')
-
-        relations_temp = {}
 
         if children is not None:
             for child in children:
@@ -61,11 +60,12 @@ def Run() -> None:
                     #relations_temp[r] = {}
                     relations_temp[node][r][r_] = relations[r][r_]
                 
-        # print(relations_temp)
+        #print(relations_temp)
 
         nodes.append(new_node)
 
     ## END JSON ##
+
     width = 0
     height = 0
 
@@ -96,6 +96,7 @@ def Run() -> None:
     ## DRAWING ##
 
     for n in nodes:
+
         r = draw.Rectangle(
             x=x_,
             y=y_,
@@ -121,11 +122,17 @@ def Run() -> None:
         x2 = x_
         for c in n.children:
 
-            underline = ''
+            underline = 'none'
             if n.children[c]: # if this element is key
                 underline = 'underline'
             box_width = n.item_boxes[c]
             box_height = n.box_height
+
+            # pause the drawing, lets do some math
+
+            helper.add_child(n.name, c, x_, y_, box_width, box_height)
+
+            # resume drawing
 
             t = draw.Text(
                 text=c,
@@ -157,6 +164,29 @@ def Run() -> None:
 
 
     ## END DRAWING ##
+
+    # more math
+    helper.construct_graph(relations_temp)
+
+    # TODO: colors
+
+    # lines??? lines
+    helper.construct_lines_test()
+    #print(helper.lines)
+    for l in helper.lines:
+        line = draw.Line(
+            sx=l.sx,
+            sy=l.sy, 
+            ex=l.ex, 
+            ey=l.ey,
+            stroke='blue',
+            marker_end='arrow',
+            stroke_width=0.5     
+            )
+        d.append(line)
+
+    # FIXME: it looks like all the lines are starting from the same point
+    # and then i have to make it curve.......
 
     d.set_pixel_scale(final_scaling)
     if save_png: d.save_png('out/' + filename + '.png')
