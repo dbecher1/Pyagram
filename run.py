@@ -3,6 +3,7 @@ import json
 from configparser import ConfigParser
 from node import *
 from max_list import *
+from helper import *
 
 def Run() -> None:
 
@@ -53,12 +54,15 @@ def Run() -> None:
                 new_node.add_child(child, is_key)
 
         if relations is not None:
+            relations_temp[node] = {}
             for r in relations:
-                relations_temp[r] = {}
+                relations_temp[node][r] = {}
                 for r_ in relations[r]:
-                    relations_temp[r] = {}
-                    relations_temp[r][r_] = relations[r][r_]
+                    #relations_temp[r] = {}
+                    relations_temp[node][r][r_] = relations[r][r_]
                 
+        # print(relations_temp)
+
         nodes.append(new_node)
 
     ## END JSON ##
@@ -87,6 +91,8 @@ def Run() -> None:
     x_ = w_padding
     y_ = h_padding
 
+    helper = Helper(canvas_width, canvas_height)
+
     ## DRAWING ##
 
     for n in nodes:
@@ -114,10 +120,12 @@ def Run() -> None:
         # Draw inner boxes
         x2 = x_
         for c in n.children:
+
             underline = ''
             if n.children[c]: # if this element is key
                 underline = 'underline'
             box_width = n.item_boxes[c]
+            box_height = n.box_height
 
             t = draw.Text(
                 text=c,
