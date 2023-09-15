@@ -57,7 +57,6 @@ def Run() -> None:
             for r in relations:
                 relations_temp[node][r] = {}
                 for r_ in relations[r]:
-                    #relations_temp[r] = {}
                     relations_temp[node][r][r_] = relations[r][r_]
                 
         #print(relations_temp)
@@ -158,7 +157,7 @@ def Run() -> None:
 
         # Move coordinates
         x_ += w_padding + n.box_width
-        if x_ + n.box_width >= canvas_width:
+        if x_ + n.box_width >= canvas_width - w_padding:
             x_ = w_padding
             y_ += h_padding * box_spacing_modifier
 
@@ -169,24 +168,33 @@ def Run() -> None:
     helper.construct_graph(relations_temp)
 
     # TODO: colors
+    colors = ['blue', 'green', 'red', 'pink', 'purple', 'orange', 'darkcyan']
+    c = 0
 
-    # lines??? lines
-    helper.construct_lines_test()
-    #print(helper.lines)
-    for l in helper.lines:
-        line = draw.Line(
-            sx=l.sx,
-            sy=l.sy, 
-            ex=l.ex, 
-            ey=l.ey,
-            stroke='blue',
-            marker_end='arrow',
-            stroke_width=0.5     
-            )
-        d.append(line)
+    lines = helper.generate_lines()
 
-    # FIXME: it looks like all the lines are starting from the same point
-    # and then i have to make it curve.......
+    for line in lines:
+
+        end_point = Point()
+        for segment in line:
+
+            line = draw.Line(sx=segment.sx, sy=segment.sy, ex=segment.ex, ey=segment.ey,stroke=colors[c], stroke_width=0.5)
+            d.append(line)
+            if segment is not None:
+                end_point.x = segment.ex
+                end_point.y = segment.ey
+
+        test = 10
+        # TODO: Arrows
+
+        #d.append(Line(end_point.x, end_point.y, end_point.x - test, end_point.y - test))
+        #d.append(Line(end_point.x, end_point.y, end_point.x + test, end_point.y - test))
+        #d.append(line)
+        #d.append(p)
+
+        c += 1
+        if c >= len(colors):
+            c = 0
 
     d.set_pixel_scale(final_scaling)
     if save_png: d.save_png('out/' + filename + '.png')
