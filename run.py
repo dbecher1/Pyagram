@@ -77,7 +77,7 @@ def Run() -> None:
 
     width += largest.sum()
 
-    w_padding = (width / len(nodes)) * 0.3 # these are for the boxes on the canvas
+    w_padding = (width / len(nodes)) * 0.8 # these are for the boxes on the canvas
     h_padding = (height / len(nodes)) * 0.9 # the other similar variable is for interior text
 
     canvas_width = width
@@ -157,7 +157,7 @@ def Run() -> None:
 
         # Move coordinates
         x_ += w_padding + n.box_width
-        if x_ + n.box_width >= canvas_width - w_padding:
+        if x_ + n.box_width >= canvas_width - (w_padding * 2):
             x_ = w_padding
             y_ += h_padding * box_spacing_modifier
 
@@ -167,34 +167,48 @@ def Run() -> None:
     # more math
     helper.construct_graph(relations_temp)
 
-    # TODO: colors
-    colors = ['blue', 'green', 'red', 'pink', 'purple', 'orange', 'darkcyan']
-    c = 0
+    if draw_lines:
 
-    lines = helper.generate_lines()
+        # LINES 
+        colors = ['blue', 'green', 'red', 'purple', 'orange', 'darkcyan']
+        c = 0
 
-    for line in lines:
+        lines = helper.generate_lines()
 
-        end_point = Point()
-        for segment in line:
+        for line_ in lines:
+            test = draw.Path(stroke=colors[c], stroke_width=0.5)
+            first = True
+            for segment in line_:
+                if first:
+                    #test.M(segment.sx, segment.sy)
+                    first = False
+                test.M(segment.sx, segment.sy)
+                test.L(segment.ex, segment.ey)
+                #new_seg = draw.Line(sx=segment.sx, sy=segment.sy, ex=segment.ex,ey=segment.ey,stroke=colors[c], stroke_width=0.5)
+                #d.append(new_seg)
+            d.append(test)
 
-            line = draw.Line(sx=segment.sx, sy=segment.sy, ex=segment.ex, ey=segment.ey,stroke=colors[c], stroke_width=0.5)
-            d.append(line)
-            if segment is not None:
-                end_point.x = segment.ex
-                end_point.y = segment.ey
+            # arrows
+            end_seg = (line_[len(line_) - 1])
 
-        test = 10
-        # TODO: Arrows
+            ep = Point(end_seg.ex, end_seg.ey) #endpoint
+            if epsilon_equals(end_seg.ey - end_seg.sy, 0, 0.01):
+                y_dir = -1
+            else:
+                y_dir_ = end_seg.ey - end_seg.sy / abs(end_seg.ey - end_seg.sy)
+                y_dir = clamp(y_dir_, -1, 1)
+            
+            arr_size = 3
+            arr_dir = arr_size *-y_dir
 
-        #d.append(Line(end_point.x, end_point.y, end_point.x - test, end_point.y - test))
-        #d.append(Line(end_point.x, end_point.y, end_point.x + test, end_point.y - test))
-        #d.append(line)
-        #d.append(p)
+            arr = draw.Path(stroke=colors[c], stroke_width=1)
+            arr.M(ep.x, ep.y).L(ep.x-arr_size, ep.y-arr_dir)
+            arr.M(ep.x, ep.y).L(ep.x+arr_size, ep.y-arr_dir)
+            d.append(arr)
 
-        c += 1
-        if c >= len(colors):
-            c = 0
+            c += 1
+            if c >= len(colors):
+                c = 0
 
     d.set_pixel_scale(final_scaling)
     if save_png: d.save_png('out/' + filename + '.png')

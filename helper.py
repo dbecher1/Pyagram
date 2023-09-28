@@ -43,6 +43,12 @@ class Line:
         s += str(self.ex) + ' ' + str(self.ey) + '\n'
         return s
     
+def epsilon_equals(lhs:float, rhs:float, epsilon:float = 0.1) -> bool:
+    return abs(lhs - rhs) <= epsilon
+
+def clamp(n, smallest, largest):
+    return max(smallest, min(n, largest))
+
 
 class Helper(object):
     # idk what to call this
@@ -139,20 +145,23 @@ class Helper(object):
                     line = Line(sx=b.x + (b.w * 0.5), sy=b.y, ex=r.x, ey=r.y)
                     self.lines.append(line)
 
-    def draw_lines_helper(self, start:Point, end:Point, first:bool) -> List[Line]:
+    def draw_lines_helper(self, start:Point, end:Point, first:bool=False) -> List[Line]:
         
         if start == end: return []
 
-        resolution = 20
+        resolution = 8
         
         step_size_x = int(self.width / resolution) # tinker with these
         step_size_y = int(self.height / resolution)
 
         # a value -1 or 1, up or down respectively
-        if start.y != end.y:
+        if not epsilon_equals(start.y, end.y):
             direction_y = (start.y - end.y) / abs(start.y - end.y)
+        elif first:
+            # the hedge case where they're on the same row and it's the first pass
+            direction_y = -1
 
-        if start.x != end.x:
+        if not epsilon_equals(start.x, end.x):
             # a value -1 or 1, left or right respectively
             direction_x = (start.x - end.x) / abs(start.x - end.x)
 
@@ -162,8 +171,7 @@ class Helper(object):
             # clamp to step size if the distance is larger
             dx = step_size_x * direction_x
 
-        dx *= -1 # reverse direction of distance; FIXME if this doesn't work like i think it should
-        # technically could be done without this but this feels more intuitive
+        dx *= -1 # reverse direction of distance
 
         dy = start.y - end.y # vertical distance
         # positive if box is above, negative if below
@@ -176,26 +184,35 @@ class Helper(object):
         # TODO gotta do collision
 
         # for this step of the recursion only move toward the further value
+        start_x = start.x
         if first:
-            r1 = randrange(2, 5)
-            r2 = randrange(-10, 10, 2)
-            r3 = randrange(-10, 10, 2)
-            dy = (r1 * step_size_y) * -(direction_y) + r2
+            # quick and dirty
+            r1 = randrange(-5, 5)
+            if r1 == 0:
+                r1 = 1
+            r2 = randrange(-3, 3)
+            r3 = randrange(-10, 10)
+            dy = (r1 + step_size_y) * -(direction_y) + r2
             dx = 0
-            start.x += r3
+            start_x += r3
         else:
-            if dx == 0 or dy == 0:
+            if epsilon_equals(dx, 0) or epsilon_equals(dy, 0):
                 pass
-            elif dx > dy:
-                dy = 0
+            if abs(dx) > abs(dy):
+               
+               dy = 0
             else:
-                dx = 0
+                
+                if epsilon_equals(start_x, dx):
+                    dy = 0
+                else:
+                    
+                    dx = 0
 
-        new_end_x = start.x + dx
+        new_end_x = start_x + dx
         new_end_y = start.y + dy
 
-        # p.M(start.x, start.y).L(new_end_x, new_end_y)
-        return [Line(start.x, start.y, new_end_x, new_end_y)] + self.draw_lines_helper(Point(new_end_x, new_end_y), end, False)
+        return [Line(start_x, start.y, new_end_x, new_end_y)] + self.draw_lines_helper(Point(new_end_x, new_end_y), end)
 
     def generate_lines(self) -> List[List[Line]]:
         lines = []
@@ -204,7 +221,7 @@ class Helper(object):
 
                 b = self.node_child_relations[p][c]['box']
                 # b is the start
-                y_ = 15 # dummy value
+                y_ = 5 # dummy value
 
                 for r in self.node_child_relations[p][c]['relations']:
 
@@ -214,24 +231,26 @@ class Helper(object):
                     dy = b.y - r.y
                     # negative: r is above
 
-                    if dy >= 0:
+                    if dy > 0:
                         start_y = b.y
                         goal_y = r.y + r.h
-                    else:
+                    elif dy < 0:
                         start_y = b.y + b.h
                         goal_y = r.y
+                    else:
+                        if b.y < (self.height * 0.5):
+                            start_y = b.y + b.h
+                            goal_y = r.y + r.h
+                        else:
+                            start_y = b.y
+                            goal_y = r.y
 
                     if b.y == r.y:
                         # if on the same row
-                        # pa.M(start_x, start_y)
-                        # pa.L(start_x, start_y + y_)
                         test = [Line(start_x, start_y, start_x, start_y + y_)]
-                        #start_y += y_
-                        #y_ += y_
                     else:
                         test = []
 
-                    #lines.append(test + self.draw_lines_helper(Point(start_x, start_y), Point(goal_x, goal_y)))
                     lines.append(self.draw_lines_helper(Point(start_x, start_y), Point(goal_x, goal_y), True))
         return lines
 
